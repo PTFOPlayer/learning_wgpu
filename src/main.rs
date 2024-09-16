@@ -41,6 +41,7 @@ async fn init_device() -> Result<(Device, Queue), Error> {
 
 // executes shader with given parameters
 async fn execute_shader(
+    a: i32,
     x: &[i32],
     y: &[i32],
     device: &Device,
@@ -81,6 +82,13 @@ async fn execute_shader(
             | wgpu::BufferUsages::COPY_SRC,
     });
 
+    // buffer that is avaliable for GPU
+    let storage_buffer_a = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: Some("Storage Buffer"),
+        contents: bytemuck::cast_slice(&[a]),
+        usage: wgpu::BufferUsages::STORAGE,
+    });
+
     // creation of compute pipeline with entrypoint "main"
     let compute_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
         label: None,
@@ -105,6 +113,10 @@ async fn execute_shader(
                 binding: 1,
                 resource: storage_buffer_y.as_entire_binding(),
             },
+            wgpu::BindGroupEntry {
+                binding: 2,
+                resource: storage_buffer_a.as_entire_binding(),
+            },
         ],
     });
 
@@ -113,7 +125,7 @@ async fn execute_shader(
     let mut encoder =
         device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
-    // compute pass is invoked in other scope, 
+    // compute pass is invoked in other scope,
     // it needs to be dealocated before we can use encoder again
     {
         let mut cpass = encoder.begin_compute_pass(&wgpu::ComputePassDescriptor {
@@ -136,7 +148,7 @@ async fn execute_shader(
 
     let (sender, receiver) = flume::bounded(1);
     buffer_slice.map_async(wgpu::MapMode::Read, move |v| sender.send(v).unwrap());
-    
+
     // await for GPU processes
     device.poll(wgpu::Maintain::wait()).panic_on_timeout();
 
@@ -157,10 +169,11 @@ async fn execute_shader(
 async fn async_execute() -> Result<(), Error> {
     let x = [1, 2, 3, 4];
     let y = [4, 3, 2, 1];
+    let a = 10;
 
     let (device, queue) = init_device().await?;
 
-    let result = execute_shader(&x, &y, &device, &queue).await?;
+    let result = execute_shader(a, &x, &y, &device, &queue).await?;
 
     println!("{:?}", result);
     Ok(())
