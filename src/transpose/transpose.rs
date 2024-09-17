@@ -1,76 +1,45 @@
-use std::borrow::Cow;
+use wgpu::{BufferUsages, Device, Queue};
 
-use wgpu::{util::DeviceExt, Device, Queue};
-
-use crate::{helpers::init_device, Error};
+use crate::{
+    helpers::{
+        create_bind_group, create_pipeline, create_staging_buffer, create_storage_buffer,
+        init_device,
+    },
+    Error,
+};
 
 // executes shader with given parameters
-async fn execute_shader(
-    x: &[i32],
-    device: &Device,
-    queue: &Queue,
-) -> Result<Vec<i32>, Error> {
-    // loading module, path for module is relative
-    let module = device.create_shader_module(wgpu::ShaderModuleDescriptor {
-        label: None,
-        source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shader.wgsl"))),
-    });
-
+async fn execute_shader(x: &[i32], device: &Device, queue: &Queue) -> Result<Vec<i32>, Error> {
     let out = vec![0; x.len()];
     let out_slice = out.as_slice();
     let size = size_of_val(out_slice) as wgpu::BufferAddress;
     // return buffer
     // MAP_READ allows for reading it
     // COPY_DST allows for it to be desetination of cpy
-    let staging_buffer_out = device.create_buffer(&wgpu::BufferDescriptor {
-        label: None,
-        size,
-        usage: wgpu::BufferUsages::MAP_READ | wgpu::BufferUsages::COPY_DST,
-        mapped_at_creation: false,
-    });
+    let staging_buffer_out = create_staging_buffer(device, size);
 
     // output buffer that is avaliable for GPU
-    let storage_buffer_out = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("Storage Buffer"),
-        contents: bytemuck::cast_slice(out_slice),
-        usage: wgpu::BufferUsages::STORAGE
-            | wgpu::BufferUsages::COPY_DST
-            | wgpu::BufferUsages::COPY_SRC,
-    });
+    let storage_buffer_out = create_storage_buffer(
+        device,
+        x,
+        BufferUsages::STORAGE | BufferUsages::COPY_DST | BufferUsages::COPY_SRC,
+    );
 
     // buffer that is avaliable for GPU
-    let storage_buffer_x = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("Storage Buffer"),
-        contents: bytemuck::cast_slice(x),
-        usage: wgpu::BufferUsages::STORAGE,
-    });
+    let storage_buffer_x = create_storage_buffer(device, x, BufferUsages::STORAGE);
 
     // creation of compute pipeline with entrypoint "main"
-    let compute_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
-        label: None,
-        layout: None,
-        module: &module,
-        entry_point: "main",
-        compilation_options: Default::default(),
-        cache: None,
-    });
+    let compute_pipeline = create_pipeline(device, include_str!("shader.wgsl"), "main");
 
     // binding buffer to group zero with specific bindings
-    let bind_group_layout = compute_pipeline.get_bind_group_layout(0);
-    let bind_group = device.create_bind_group(&wgpu::BindGroupDescriptor {
-        label: None,
-        layout: &bind_group_layout,
-        entries: &[
-            wgpu::BindGroupEntry {
-                binding: 0,
-                resource: storage_buffer_x.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 1,
-                resource: storage_buffer_out.as_entire_binding(),
-            },
+    let bind_group = create_bind_group(
+        device,
+        &compute_pipeline,
+        vec![
+            (0, storage_buffer_x.as_entire_binding()),
+            (1, storage_buffer_out.as_entire_binding()),
         ],
-    });
+    );
 
     // creates command encoder
     // its role is to execute pipelines (one ore more)
