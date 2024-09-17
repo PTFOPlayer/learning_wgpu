@@ -8,12 +8,10 @@ var<storage> y: array<i32>;
 @binding(2)
 var<storage, read_write> out: array<i32>;
 
-@group(0)
-@binding(3)
-var<storage> sizes: array<u32>;
-
 fn dot_product(x_cord: u32, y_cord: u32) {
-    out[x_cord*sizes[0] + y_cord] = x[x_cord]*y[y_cord];
+    var x_size = arrayLength(&x);
+    var out_cord = x_cord*x_size+y_cord;
+    out[out_cord] = x[x_cord]*y[y_cord];
 }
 
 @compute
