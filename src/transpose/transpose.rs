@@ -7,7 +7,6 @@ use crate::{helpers::init_device, Error};
 // executes shader with given parameters
 async fn execute_shader(
     x: &[i32],
-    y: &[i32],
     device: &Device,
     queue: &Queue,
 ) -> Result<Vec<i32>, Error> {
@@ -17,7 +16,7 @@ async fn execute_shader(
         source: wgpu::ShaderSource::Wgsl(Cow::Borrowed(include_str!("shader.wgsl"))),
     });
 
-    let out = vec![0; x.len() * y.len()];
+    let out = vec![0; x.len()];
     let out_slice = out.as_slice();
     let size = size_of_val(out_slice) as wgpu::BufferAddress;
     // return buffer
@@ -46,13 +45,6 @@ async fn execute_shader(
         usage: wgpu::BufferUsages::STORAGE,
     });
 
-    // buffer that is avaliable for GPU
-    let storage_buffer_y = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("Storage Buffer"),
-        contents: bytemuck::cast_slice(y),
-        usage: wgpu::BufferUsages::STORAGE,
-    });
-
     // creation of compute pipeline with entrypoint "main"
     let compute_pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
         label: None,
@@ -75,10 +67,6 @@ async fn execute_shader(
             },
             wgpu::BindGroupEntry {
                 binding: 1,
-                resource: storage_buffer_y.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 2,
                 resource: storage_buffer_out.as_entire_binding(),
             },
         ],
@@ -98,8 +86,8 @@ async fn execute_shader(
         });
         cpass.set_pipeline(&compute_pipeline);
         cpass.set_bind_group(0, &bind_group, &[]);
-        cpass.insert_debug_marker("dot product");
-        cpass.dispatch_workgroups(x.len() as u32, y.len() as u32, 1);
+        cpass.insert_debug_marker("transposition");
+        cpass.dispatch_workgroups(x.len() as u32 / 4, x.len() as u32 / 4, 1);
     }
 
     // copy result
@@ -130,13 +118,18 @@ async fn execute_shader(
     Err(Error::ExecutionError)
 }
 
-pub async fn execute_dot_product() -> Result<(), Error> {
-    let x = [1, 2, 3, 4];
-    let y = [1, 2, 3, 4];
+pub async fn execute_transpose() -> Result<(), Error> {
+    #[rustfmt::skip]
+    let x = [
+        1,  2,  3,  4, 
+        5,  6,  7,  8,
+        9,  10, 11, 12,
+        13, 14, 15, 16
+    ];
 
     let (device, queue) = init_device().await?;
 
-    let result = execute_shader(&x, &y, &device, &queue).await?;
+    let result = execute_shader(&x, &device, &queue).await?;
 
     println!("{:?}", result);
     Ok(())
