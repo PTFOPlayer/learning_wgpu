@@ -97,7 +97,7 @@ async fn execute_shader(
         });
         cpass.set_pipeline(&compute_pipeline);
         cpass.set_bind_group(0, &bind_group, &[]);
-        cpass.insert_debug_marker("compute collatz iterations");
+        cpass.insert_debug_marker("saxpy");
         cpass.dispatch_workgroups(x.len() as u32, 1, 1);
     }
 
