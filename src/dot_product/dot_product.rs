@@ -29,7 +29,7 @@ async fn execute_shader(
         mapped_at_creation: false,
     });
 
-    // buffer that is avaliable for GPU
+    // output buffer that is avaliable for GPU
     let storage_buffer_out = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("Storage Buffer"),
         contents: bytemuck::cast_slice(out),
@@ -49,12 +49,6 @@ async fn execute_shader(
     let storage_buffer_y = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("Storage Buffer"),
         contents: bytemuck::cast_slice(y),
-        usage: wgpu::BufferUsages::STORAGE,
-    });
-
-    let storage_buffer_sizes = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-        label: Some("Storage Buffer"),
-        contents: bytemuck::cast_slice(&[x.len() as u32, y.len() as u32]),
         usage: wgpu::BufferUsages::STORAGE,
     });
 
@@ -85,10 +79,6 @@ async fn execute_shader(
             wgpu::BindGroupEntry {
                 binding: 2,
                 resource: storage_buffer_out.as_entire_binding(),
-            },
-            wgpu::BindGroupEntry {
-                binding: 3,
-                resource: storage_buffer_sizes.as_entire_binding(),
             },
         ],
     });
@@ -140,8 +130,8 @@ async fn execute_shader(
 }
 
 pub async fn execute_dot_product() -> Result<(), Error> {
-    let x = [1,2,3,4];
-    let y = [1,2,3,4];
+    let x = [1, 2, 3, 4];
+    let y = [1, 2, 3, 4];
     let out = [0; 16];
 
     let (device, queue) = init_device().await?;
