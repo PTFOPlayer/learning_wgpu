@@ -1,10 +1,7 @@
 use wgpu::{BufferUsages, Device, Queue};
 
 use crate::{
-    helpers::{
-        create_bind_group, create_pipeline, create_staging_buffer, create_storage_buffer,
-        init_device,
-    },
+    helpers::{create_bind_group, create_pipeline, create_staging_buffer, create_storage_buffer},
     Error,
 };
 
@@ -43,7 +40,7 @@ async fn execute_shader(
     let bind_group = create_bind_group(
         device,
         &compute_pipeline,
-        vec![
+        [
             (0, storage_buffer_x.as_entire_binding()),
             (1, storage_buffer_y.as_entire_binding()),
             (2, storage_buffer_out.as_entire_binding()),
@@ -96,11 +93,9 @@ async fn execute_shader(
     Err(Error::ExecutionError)
 }
 
-pub async fn execute_dot_product() -> Result<(), Error> {
+pub async fn execute_dot_product(device: Device, queue: Queue) -> Result<(), Error> {
     let x = [1, 2, 3, 4];
     let y = [1, 2, 3, 4];
-
-    let (device, queue) = init_device().await?;
 
     let result = execute_shader(&x, &y, &device, &queue).await?;
 

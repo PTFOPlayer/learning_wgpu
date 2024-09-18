@@ -1,10 +1,7 @@
 use wgpu::{BufferUsages, Device, Queue};
 
 use crate::{
-    helpers::{
-        create_bind_group, create_pipeline, create_staging_buffer, create_storage_buffer,
-        init_device,
-    },
+    helpers::{create_bind_group, create_pipeline, create_staging_buffer, create_storage_buffer},
     Error,
 };
 
@@ -42,7 +39,7 @@ async fn execute_shader(
     let bind_group = create_bind_group(
         device,
         &compute_pipeline,
-        vec![
+        [
             (0, storage_buffer_x.as_entire_binding()),
             (1, storage_buffer_y.as_entire_binding()),
             (2, storage_buffer_a.as_entire_binding()),
@@ -95,12 +92,10 @@ async fn execute_shader(
     Err(Error::ExecutionError)
 }
 
-pub async fn execute_saxpy() -> Result<(), Error> {
+pub async fn execute_saxpy(device: Device, queue: Queue) -> Result<(), Error> {
     let x = [1, 2, 3, 4];
     let y = [4, 3, 2, 1];
     let a = 10;
-
-    let (device, queue) = init_device().await?;
 
     let result = execute_shader(a, &x, &y, &device, &queue).await?;
 
