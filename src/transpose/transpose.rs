@@ -3,7 +3,6 @@ use wgpu::{BufferUsages, Device, Queue};
 use crate::{
     helpers::{
         create_bind_group, create_pipeline, create_staging_buffer, create_storage_buffer,
-        init_device,
     },
     Error,
 };
@@ -35,7 +34,7 @@ async fn execute_shader(x: &[i32], device: &Device, queue: &Queue) -> Result<Vec
     let bind_group = create_bind_group(
         device,
         &compute_pipeline,
-        vec![
+        [
             (0, storage_buffer_x.as_entire_binding()),
             (1, storage_buffer_out.as_entire_binding()),
         ],
@@ -87,7 +86,7 @@ async fn execute_shader(x: &[i32], device: &Device, queue: &Queue) -> Result<Vec
     Err(Error::ExecutionError)
 }
 
-pub async fn execute_transpose() -> Result<(), Error> {
+pub async fn execute_transpose(device: Device, queue: Queue) -> Result<(), Error> {
     #[rustfmt::skip]
     let x = [
         1,  2,  3,  4, 
@@ -95,8 +94,6 @@ pub async fn execute_transpose() -> Result<(), Error> {
         9,  10, 11, 12,
         13, 14, 15, 16
     ];
-
-    let (device, queue) = init_device().await?;
 
     let result = execute_shader(&x, &device, &queue).await?;
 

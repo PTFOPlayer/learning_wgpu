@@ -2,40 +2,8 @@ use std::borrow::Cow;
 
 use wgpu::{
     util::DeviceExt, BindGroup, BindGroupEntry, BindingResource, Buffer, BufferUsages,
-    ComputePipeline, Device, Queue, RequestAdapterOptions,
+    ComputePipeline, Device,
 };
-
-use crate::Error;
-
-/// init device
-/// Generates WGPU instance and aquires GPU
-pub async fn init_device() -> Result<(Device, Queue), Error> {
-    let instance = wgpu::Instance::default();
-
-    let adapter = match instance
-        .request_adapter(&RequestAdapterOptions::default())
-        .await
-    {
-        Some(adapter) => adapter,
-        None => return Err(Error::AdapterAquasitionError),
-    };
-
-    match adapter
-        .request_device(
-            &wgpu::DeviceDescriptor {
-                label: None,
-                required_features: wgpu::Features::empty(),
-                required_limits: wgpu::Limits::downlevel_defaults(),
-                memory_hints: wgpu::MemoryHints::MemoryUsage,
-            },
-            None,
-        )
-        .await
-    {
-        Ok(res) => Ok(res),
-        Err(error) => Err(Error::DeviceCreationError(error)),
-    }
-}
 
 pub fn create_pipeline(device: &Device, module: &str, entry_point: &str) -> ComputePipeline {
     device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
@@ -52,19 +20,16 @@ pub fn create_pipeline(device: &Device, module: &str, entry_point: &str) -> Comp
     })
 }
 
-pub fn create_bind_group(
+pub fn create_bind_group<const SIZE: usize>(
     device: &Device,
     compute_pipeline: &ComputePipeline,
-    entries: Vec<(u32, BindingResource)>,
+    entries: [(u32, BindingResource); SIZE],
 ) -> BindGroup {
     let bind_group_layout = compute_pipeline.get_bind_group_layout(0);
     device.create_bind_group(&wgpu::BindGroupDescriptor {
         label: None,
         layout: &bind_group_layout,
-        entries: &entries
-            .into_iter()
-            .map(|(binding, resource)| BindGroupEntry { binding, resource })
-            .collect::<Vec<_>>(),
+        entries: &entries.map(|(binding, resource)| BindGroupEntry { binding, resource }),
     })
 }
 
