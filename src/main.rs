@@ -1,12 +1,14 @@
 use std::io;
 
 use dot_product::dot_product::execute_dot_product;
+use matrix_dot_product::matrix_dot_product::execute_matrix_dot_product;
 use saxpy::saxpy::execute_saxpy;
 use transpose::transpose::execute_transpose;
 use wgpu::{Device, Queue, RequestAdapterOptions, RequestDeviceError};
 
 pub mod dot_product;
 pub mod helpers;
+pub mod matrix_dot_product;
 pub mod saxpy;
 pub mod transpose;
 
@@ -31,8 +33,9 @@ fn main() -> Result<(), Error> {
         r#"
 Select shader:
     (1) saxpy
-    (2) saxpy
-    (3) saxpy
+    (2) vec dot product
+    (3) transpose
+    (4) matrix dot product
 "#
     );
 
@@ -43,6 +46,7 @@ Select shader:
         Ok(1) => smol::block_on(execute_saxpy(device, queue))?,
         Ok(2) => smol::block_on(execute_dot_product(device, queue))?,
         Ok(3) => smol::block_on(execute_transpose(device, queue))?,
+        Ok(4) => smol::block_on(execute_matrix_dot_product(device, queue))?,
         Ok(_) | Err(_) => {
             println!("wrong input")
         }

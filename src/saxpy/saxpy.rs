@@ -99,6 +99,7 @@ pub async fn execute_saxpy(device: Device, queue: Queue) -> Result<(), Error> {
 
     let result = execute_shader(a, &x, &y, &device, &queue).await?;
 
+    println!("a: {}, x: {:?}, y: {:?}", a, x, y);
     println!("{:?}", result);
     Ok(())
 }
