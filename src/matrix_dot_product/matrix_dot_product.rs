@@ -1,3 +1,6 @@
+use std::{default, fmt::Display};
+
+use bytemuck::{Pod, Zeroable};
 use wgpu::{BufferUsages, Device, Queue};
 
 use crate::{
@@ -7,13 +10,12 @@ use crate::{
 
 // executes shader with given parameters
 async fn execute_shader(
-    x: &[i32],
-    y: &[i32],
-    n: u32,
+    matrix_x: Matrix,
+    matrix_y: Matrix,
     device: &Device,
     queue: &Queue,
 ) -> Result<Vec<i32>, Error> {
-    let out = vec![0; (n * n) as usize];
+    let out = vec![0; (matrix_x.y * matrix_y.x) as usize];
     let out_slice = out.as_slice();
     let size = size_of_val(out_slice) as wgpu::BufferAddress;
     // return buffer
@@ -29,13 +31,10 @@ async fn execute_shader(
     );
 
     // buffer that is avaliable for GPU
-    let storage_buffer_x = create_storage_buffer(device, x, BufferUsages::STORAGE);
+    let storage_buffer_x = create_storage_buffer(device, &[matrix_x], BufferUsages::UNIFORM);
 
     // buffer that is avaliable for GPU
-    let storage_buffer_y = create_storage_buffer(device, y, BufferUsages::STORAGE);
-
-    // buffer that is avaliable for GPU
-    let storage_buffer_sizes = create_storage_buffer(device, &[n], BufferUsages::STORAGE);
+    let storage_buffer_y = create_storage_buffer(device, &[matrix_y], BufferUsages::UNIFORM);
 
     // creation of compute pipeline with entrypoint "main"
     let compute_pipeline = create_pipeline(device, include_str!("shader.wgsl"), "main");
@@ -47,8 +46,7 @@ async fn execute_shader(
         [
             (0, storage_buffer_x.as_entire_binding()),
             (1, storage_buffer_y.as_entire_binding()),
-            (2, storage_buffer_sizes.as_entire_binding()),
-            (3, storage_buffer_out.as_entire_binding()),
+            (2, storage_buffer_out.as_entire_binding()),
         ],
     );
 
@@ -67,7 +65,7 @@ async fn execute_shader(
         cpass.set_pipeline(&compute_pipeline);
         cpass.set_bind_group(0, &bind_group, &[]);
         cpass.insert_debug_marker("dot product");
-        cpass.dispatch_workgroups(n, n, 1);
+        cpass.dispatch_workgroups(matrix_x.y, matrix_y.x, 1);
     }
 
     // copy result
@@ -100,13 +98,14 @@ async fn execute_shader(
 
 pub async fn execute_matrix_dot_product(device: Device, queue: Queue) -> Result<(), Error> {
     #[rustfmt::skip]
-    let x = [
+    let x = [ 
         2, 1, 1, 7, 4, 3,
         1, 4, 8, 0, 3, 5,
         4, 1, 0, 5, 2, 1,
         4, 5, 7, 2, 6, 8,
         1, 6, 0, 9, 9, 7,
         3, 5, 2, 1, 4, 7,
+ 
     ];
     #[rustfmt::skip]
     let y = [
@@ -118,28 +117,70 @@ pub async fn execute_matrix_dot_product(device: Device, queue: Queue) -> Result<
         1, 8, 8, 6, 0, 6,
     ];
 
-    let n = 6;
+    let matrix_x = Matrix::new(&x, 6, 6);
+    let matrix_y = Matrix::new(&y, 6, 6);
 
-    let result = execute_shader(&x, &y, n, &device, &queue).await?;
+    let result = execute_shader(matrix_x, matrix_y, &device, &queue).await?;
 
-    println!("x: [");   
-    for i in 0..6 {
-        let idx = (i*n) as usize;
-        println!("  {:?}", &x[idx..idx+6]);
-    }
-    println!("]");
-    println!("y: [");   
-    for i in 0..6 {
-        let idx = (i*n) as usize;
-        println!("  {:?}", &y[idx..idx+6]);
-    }
-    println!("]");
+    println!("x: {}", matrix_x);
+    println!("y: {}", matrix_y);
 
-    println!("result : [");   
+    println!("result : [");
     for i in 0..6 {
-        let idx = (i*n) as usize;
-        println!("  {:?}", &result[idx..idx+6]);
+        let idx = (i * 6) as usize;
+        println!("  {:?}", &result[idx..idx + 6]);
     }
     println!("]");
     Ok(())
+}
+
+#[repr(C)]
+#[derive(Clone, Copy, Zeroable, Pod)]
+struct Matrix {
+    data: [[i32; 4]; 8 * 8],
+    x: u32,
+    y: u32,
+    _pad: [u32; 2],
+}
+impl Default for Matrix {
+    fn default() -> Self {
+        Self {
+            data: [[0; 4]; 8 * 8],
+            x: Default::default(),
+            y: Default::default(),
+            _pad: Default::default(),
+        }
+    }
+}
+
+impl Matrix {
+    fn new(data: &[i32], x: u32, y: u32) -> Matrix {
+        let mut out = Matrix {
+            x,
+            y,
+            ..Default::default()
+        };
+        out.data[..data.len()]
+            .copy_from_slice(&data.iter().map(|x| [*x, 0, 0, 0]).collect::<Vec<_>>());
+        out
+    }
+}
+
+impl Display for Matrix {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut data = String::new();
+        data += "[\n";
+
+        let (dimx, dimy) = (self.x as usize, self.y as usize);
+
+        for i in 0..dimx {
+            for j in 0..dimy {
+                data += &format!(" {},", self.data[i * dimx + j][0]);
+            }
+            data += "\n";
+        }
+        data += "]";
+
+        f.write_str(&data)
+    }
 }
