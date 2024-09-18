@@ -14,14 +14,14 @@ var<storage, read_write> out: array<i32>;
 fn dot_product(x_cord: u32, y_cord: u32) {
     let n = n_buff[0];
 
-    var out_cord = x_cord * n + y_cord;
+    var out_cord = x_cord*n+y_cord;
 
     var sum = 0;
     for (var i = u32(0); i < n; i += u32(1)) {
         sum += x[(x_cord * n) + i] * y[(n * i) + y_cord];
     }
-
     out[out_cord] = sum;
+
 }
 
 @compute
