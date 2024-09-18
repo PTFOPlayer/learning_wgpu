@@ -98,7 +98,7 @@ pub async fn execute_dot_product(device: Device, queue: Queue) -> Result<(), Err
     let y = [1, 2, 3, 4];
 
     let result = execute_shader(&x, &y, &device, &queue).await?;
-
+    println!("x: {:?}, y: {:?}", x, y);
     println!("{:?}", result);
     Ok(())
 }

@@ -1,15 +1,19 @@
 use wgpu::{BufferUsages, Device, Queue};
 
 use crate::{
-    helpers::{
-        create_bind_group, create_pipeline, create_staging_buffer, create_storage_buffer,
-    },
+    helpers::{create_bind_group, create_pipeline, create_staging_buffer, create_storage_buffer},
     Error,
 };
 
 // executes shader with given parameters
-async fn execute_shader(x: &[i32], device: &Device, queue: &Queue) -> Result<Vec<i32>, Error> {
-    let out = vec![0; x.len()];
+async fn execute_shader(
+    x: &[i32],
+    y: &[i32],
+    n: u32,
+    device: &Device,
+    queue: &Queue,
+) -> Result<Vec<i32>, Error> {
+    let out = vec![0; (n * n) as usize];
     let out_slice = out.as_slice();
     let size = size_of_val(out_slice) as wgpu::BufferAddress;
     // return buffer
@@ -20,12 +24,18 @@ async fn execute_shader(x: &[i32], device: &Device, queue: &Queue) -> Result<Vec
     // output buffer that is avaliable for GPU
     let storage_buffer_out = create_storage_buffer(
         device,
-        x,
+        out_slice,
         BufferUsages::STORAGE | BufferUsages::COPY_DST | BufferUsages::COPY_SRC,
     );
 
     // buffer that is avaliable for GPU
     let storage_buffer_x = create_storage_buffer(device, x, BufferUsages::STORAGE);
+
+    // buffer that is avaliable for GPU
+    let storage_buffer_y = create_storage_buffer(device, y, BufferUsages::STORAGE);
+
+    // buffer that is avaliable for GPU
+    let storage_buffer_sizes = create_storage_buffer(device, &[n], BufferUsages::STORAGE);
 
     // creation of compute pipeline with entrypoint "main"
     let compute_pipeline = create_pipeline(device, include_str!("shader.wgsl"), "main");
@@ -36,7 +46,9 @@ async fn execute_shader(x: &[i32], device: &Device, queue: &Queue) -> Result<Vec
         &compute_pipeline,
         [
             (0, storage_buffer_x.as_entire_binding()),
-            (1, storage_buffer_out.as_entire_binding()),
+            (1, storage_buffer_y.as_entire_binding()),
+            (2, storage_buffer_sizes.as_entire_binding()),
+            (3, storage_buffer_out.as_entire_binding()),
         ],
     );
 
@@ -54,8 +66,8 @@ async fn execute_shader(x: &[i32], device: &Device, queue: &Queue) -> Result<Vec
         });
         cpass.set_pipeline(&compute_pipeline);
         cpass.set_bind_group(0, &bind_group, &[]);
-        cpass.insert_debug_marker("transposition");
-        cpass.dispatch_workgroups(x.len() as u32 / 4, x.len() as u32 / 4, 1);
+        cpass.insert_debug_marker("dot product");
+        cpass.dispatch_workgroups(x.len() as u32, y.len() as u32, 1);
     }
 
     // copy result
@@ -86,18 +98,13 @@ async fn execute_shader(x: &[i32], device: &Device, queue: &Queue) -> Result<Vec
     Err(Error::ExecutionError)
 }
 
-pub async fn execute_transpose(device: Device, queue: Queue) -> Result<(), Error> {
-    #[rustfmt::skip]
-    let x = [
-        1,  2,  3,  4, 
-        5,  6,  7,  8,
-        9,  10, 11, 12,
-        13, 14, 15, 16
-    ];
+pub async fn execute_matrix_dot_product(device: Device, queue: Queue) -> Result<(), Error> {
+    let x = [1, 2, 3, 4];
+    let y = [1, 2, 3, 4];
+    let n = 2;
 
-    let result = execute_shader(&x, &device, &queue).await?;
-
-    println!("x: {:?}", x);
+    let result = execute_shader(&x, &y, n, &device, &queue).await?;
+    println!("x: {:?}, y: {:?}", x, y);
     println!("{:?}", result);
     Ok(())
 }
