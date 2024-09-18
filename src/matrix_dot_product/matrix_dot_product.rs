@@ -67,7 +67,7 @@ async fn execute_shader(
         cpass.set_pipeline(&compute_pipeline);
         cpass.set_bind_group(0, &bind_group, &[]);
         cpass.insert_debug_marker("dot product");
-        cpass.dispatch_workgroups(x.len() as u32, y.len() as u32, 1);
+        cpass.dispatch_workgroups(n, n, 1);
     }
 
     // copy result
@@ -99,12 +99,47 @@ async fn execute_shader(
 }
 
 pub async fn execute_matrix_dot_product(device: Device, queue: Queue) -> Result<(), Error> {
-    let x = [1, 2, 3, 4];
-    let y = [1, 2, 3, 4];
-    let n = 2;
+    #[rustfmt::skip]
+    let x = [
+        2, 1, 1, 7, 4, 3,
+        1, 4, 8, 0, 3, 5,
+        4, 1, 0, 5, 2, 1,
+        4, 5, 7, 2, 6, 8,
+        1, 6, 0, 9, 9, 7,
+        3, 5, 2, 1, 4, 7,
+    ];
+    #[rustfmt::skip]
+    let y = [
+        5, 6, 9, 7, 1, 0,
+        1, 6, 6, 0, 8, 3,
+        1, 7, 2, 7, 1, 4,
+        7, 1, 9, 5, 1, 2,
+        0, 5, 1, 9, 5, 2,
+        1, 8, 8, 6, 0, 6,
+    ];
+
+    let n = 6;
 
     let result = execute_shader(&x, &y, n, &device, &queue).await?;
-    println!("x: {:?}, y: {:?}", x, y);
-    println!("{:?}", result);
+
+    println!("x: [");   
+    for i in 0..6 {
+        let idx = (i*n) as usize;
+        println!("  {:?}", &x[idx..idx+6]);
+    }
+    println!("]");
+    println!("y: [");   
+    for i in 0..6 {
+        let idx = (i*n) as usize;
+        println!("  {:?}", &y[idx..idx+6]);
+    }
+    println!("]");
+
+    println!("result : [");   
+    for i in 0..6 {
+        let idx = (i*n) as usize;
+        println!("  {:?}", &result[idx..idx+6]);
+    }
+    println!("]");
     Ok(())
 }
