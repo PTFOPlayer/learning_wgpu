@@ -1,4 +1,4 @@
-use std::{default, fmt::Display};
+use std::fmt::Display;
 
 use bytemuck::{Pod, Zeroable};
 use wgpu::{BufferUsages, Device, Queue};
@@ -137,7 +137,7 @@ pub async fn execute_matrix_dot_product(device: Device, queue: Queue) -> Result<
 #[repr(C)]
 #[derive(Clone, Copy, Zeroable, Pod)]
 struct Matrix {
-    data: [[i32; 4]; 8 * 8],
+    data: [i32; 4 * 8 * 8],
     x: u32,
     y: u32,
     _pad: [u32; 2],
@@ -145,7 +145,7 @@ struct Matrix {
 impl Default for Matrix {
     fn default() -> Self {
         Self {
-            data: [[0; 4]; 8 * 8],
+            data: [0; 4 * 8 * 8],
             x: Default::default(),
             y: Default::default(),
             _pad: Default::default(),
@@ -160,8 +160,7 @@ impl Matrix {
             y,
             ..Default::default()
         };
-        out.data[..data.len()]
-            .copy_from_slice(&data.iter().map(|x| [*x, 0, 0, 0]).collect::<Vec<_>>());
+        out.data[..data.len()].copy_from_slice(&data);
         out
     }
 }
@@ -175,7 +174,7 @@ impl Display for Matrix {
 
         for i in 0..dimx {
             for j in 0..dimy {
-                data += &format!(" {},", self.data[i * dimx + j][0]);
+                data += &format!(" {},", self.data[i * dimx + j]);
             }
             data += "\n";
         }
