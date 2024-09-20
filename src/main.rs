@@ -1,33 +1,24 @@
 use std::io;
 
+use crate::error::Error;
 use dot_product::dot_product::execute_dot_product;
 use matrix_dot_product::matrix_dot_product::execute_matrix_dot_product;
 use saxpy::saxpy::execute_saxpy;
 use transpose::transpose::execute_transpose;
-use wgpu::{Device, Queue, RequestAdapterOptions, RequestDeviceError};
+use triangle::triangle::execute_triangle;
+use wgpu::{Adapter, Device, Queue, RequestAdapterOptions, Surface};
+use winit::{event_loop::EventLoop, window::Window};
 
 pub mod dot_product;
+pub mod error;
 pub mod helpers;
 pub mod matrix_dot_product;
 pub mod saxpy;
 pub mod transpose;
-
-#[derive(Debug)]
-pub enum Error {
-    AdapterAquasitionError,
-    DeviceCreationError(RequestDeviceError),
-    ExecutionError,
-    IoError,
-}
-
-impl From<io::Error> for Error {
-    fn from(_: io::Error) -> Self {
-        Error::IoError
-    }
-}
+pub mod triangle;
 
 fn main() -> Result<(), Error> {
-    let (device, queue) = smol::block_on(init_device())?;
+    // let (device, queue) = smol::block_on(init_device())?;
 
     print!(
         r#"
@@ -41,23 +32,29 @@ Select shader:
 
     let mut buffer = String::new();
     io::stdin().read_line(&mut buffer)?;
+    let maybe_u32 = buffer[..buffer.len() - 1].parse::<u32>();
 
-    match buffer[..buffer.len() - 1].parse::<u32>() {
-        Ok(1) => smol::block_on(execute_saxpy(device, queue))?,
-        Ok(2) => smol::block_on(execute_dot_product(device, queue))?,
-        Ok(3) => smol::block_on(execute_transpose(device, queue))?,
-        Ok(4) => smol::block_on(execute_matrix_dot_product(device, queue))?,
-        Ok(_) | Err(_) => {
-            println!("wrong input")
+    match maybe_u32 {
+        Ok(a @ 1..=4) => {
+            let (device, queue) = smol::block_on(init_compute_device())?;
+            match a {
+                1 => smol::block_on(execute_saxpy(device, queue))?,
+                2 => smol::block_on(execute_dot_product(device, queue))?,
+                3 => smol::block_on(execute_transpose(device, queue))?,
+                4 => smol::block_on(execute_matrix_dot_product(device, queue))?,
+                _ => println!("unreachable!"),
+            };
         }
-    }
+        Ok(5) => smol::block_on(execute_triangle())?,
+        _ => panic!("incorrect input"),
+    };
 
     Ok(())
 }
 
 /// init device
 /// Generates WGPU instance and aquires GPU
-pub async fn init_device() -> Result<(Device, Queue), Error> {
+pub async fn init_compute_device() -> Result<(Device, Queue), Error> {
     let instance = wgpu::Instance::default();
 
     let adapter = match instance
@@ -68,7 +65,7 @@ pub async fn init_device() -> Result<(Device, Queue), Error> {
         None => return Err(Error::AdapterAquasitionError),
     };
 
-    match adapter
+    Ok(adapter
         .request_device(
             &wgpu::DeviceDescriptor {
                 label: None,
@@ -78,9 +75,5 @@ pub async fn init_device() -> Result<(Device, Queue), Error> {
             },
             None,
         )
-        .await
-    {
-        Ok(res) => Ok(res),
-        Err(error) => Err(Error::DeviceCreationError(error)),
-    }
+        .await?)
 }
