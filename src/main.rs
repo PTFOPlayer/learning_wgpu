@@ -3,6 +3,7 @@ use std::io;
 use crate::error::Error;
 use dot_product::dot_product::execute_dot_product;
 use matrix_dot_product::matrix_dot_product::execute_matrix_dot_product;
+use rectangle::rectangle::execute_rectangle;
 use saxpy::saxpy::execute_saxpy;
 use transpose::transpose::execute_transpose;
 use triangle::triangle::execute_triangle;
@@ -12,10 +13,10 @@ pub mod dot_product;
 pub mod error;
 pub mod helpers;
 pub mod matrix_dot_product;
+pub mod rectangle;
 pub mod saxpy;
 pub mod transpose;
 pub mod triangle;
-
 fn main() -> Result<(), Error> {
     // let (device, queue) = smol::block_on(init_device())?;
 
@@ -45,6 +46,8 @@ Select shader:
             };
         }
         Ok(5) => smol::block_on(execute_triangle())?,
+        Ok(6) => smol::block_on(execute_rectangle())?,
+
         _ => panic!("incorrect input"),
     };
 
