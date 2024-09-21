@@ -25,6 +25,6 @@ fn vertex_main(@builtin(vertex_index) in_vertex_index: u32) -> VertexOut {
 }
 
 @fragment
-fn fragment_main(@location(0) color: vec4<f32>) -> @location(0) vec4<f32> {
-    return color;
+fn fragment_main(v_in: VertexOut) -> @location(0) vec4<f32> {
+    return v_in.color;
 }

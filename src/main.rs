@@ -6,8 +6,7 @@ use matrix_dot_product::matrix_dot_product::execute_matrix_dot_product;
 use saxpy::saxpy::execute_saxpy;
 use transpose::transpose::execute_transpose;
 use triangle::triangle::execute_triangle;
-use wgpu::{Adapter, Device, Queue, RequestAdapterOptions, Surface};
-use winit::{event_loop::EventLoop, window::Window};
+use wgpu::{Device, Queue, RequestAdapterOptions};
 
 pub mod dot_product;
 pub mod error;
