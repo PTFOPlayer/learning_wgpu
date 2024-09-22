@@ -1,7 +1,9 @@
 use std::mem;
 
 use wgpu::{
-    util::DeviceExt, BufferAddress, Device, LoadOp, RequestAdapterOptions, ShaderModuleDescriptor, ShaderSource, StoreOp, Surface, SurfaceConfiguration, VertexAttribute, VertexBufferLayout, VertexStepMode
+    util::DeviceExt, BufferAddress, Device, LoadOp, RequestAdapterOptions, ShaderModuleDescriptor,
+    ShaderSource, StoreOp, Surface, SurfaceConfiguration, VertexAttribute, VertexBufferLayout,
+    VertexStepMode,
 };
 use winit::{
     dpi::PhysicalSize,
@@ -95,7 +97,6 @@ pub async fn execute_rectangle() -> Result<(), Error> {
     });
 
     surface.configure(&device, &config);
-
 
     let vertex_buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
         label: Some("Vertex Buffer"),
@@ -208,9 +209,10 @@ impl Vertex {
         Self { position, color }
     }
 
-    const ATTRIBUTES: [VertexAttribute; 2] = wgpu::vertex_attr_array![0 => Float32x4, 1 => Float32x4];
+    const ATTRIBUTES: [VertexAttribute; 2] =
+        wgpu::vertex_attr_array![0 => Float32x4, 1 => Float32x4];
 
-    const fn decriptor() -> VertexBufferLayout<'static> { 
+    const fn decriptor() -> VertexBufferLayout<'static> {
         VertexBufferLayout {
             array_stride: mem::size_of::<Vertex>() as BufferAddress,
             step_mode: VertexStepMode::Vertex,
@@ -220,10 +222,12 @@ impl Vertex {
 }
 
 const VERTS: [Vertex; 6] = [
-    Vertex::new(v4xyz!(-1.0, -1.0, 0.0), v4xyz!(1.0, 0.0, 0.0)), // a
-    Vertex::new(v4xyz!(1.0, -1.0, 0.0), v4xyz!(0.0, 1.0, 0.0)),  // b
-    Vertex::new(v4xyz!(-1.0, 1.0, 0.0), v4xyz!(0.0, 0.0, 1.0)),  // d
-    Vertex::new(v4xyz!(-1.0, 1.0, 0.0), v4xyz!(0.0, 0.0, 1.0)),  // d
-    Vertex::new(v4xyz!(1.0, -1.0, 0.0), v4xyz!(0.0, 1.0, 0.0)),  // b
-    Vertex::new(v4xyz!(1.0, 1.0, 0.0), v4xyz!(1.0, 0.0, 0.0)),   // c
+    // left bottom triangle
+    Vertex::new(v4xyz!(-0.5, -0.5, 0.0), v4xyz!(1.0, 0.0, 0.0)), // a
+    Vertex::new(v4xyz!(0.5, -0.5, 0.0), v4xyz!(0.0, 1.0, 0.0)),  // b
+    Vertex::new(v4xyz!(-0.5, 0.5, 0.0), v4xyz!(0.0, 0.0, 1.0)),  // d
+    // right upper triangle
+    Vertex::new(v4xyz!(0.5, -0.5, 0.0), v4xyz!(0.0, 1.0, 0.0)),  // b
+    Vertex::new(v4xyz!(-0.5, 0.5, 0.0), v4xyz!(0.0, 0.0, 1.0)),  // d
+    Vertex::new(v4xyz!(0.5, 0.5, 0.0), v4xyz!(1.0, 0.0, 0.0)),   // c
 ];
