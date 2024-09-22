@@ -11,15 +11,15 @@ struct VertexOut {
 
 @vertex
 fn vertex_main(vertex_in: VertexIn) -> VertexOut {
-  var out: VertexOut;
-    
-  out.color = vertex_in.color;
-  out.position = vertex_in.position;
+    var out: VertexOut;
 
-  return out;
+    out.color = vertex_in.color;
+    out.position = vertex_in.position;
+
+    return out;
 }
 
 @fragment
 fn fragment_main(v_in: VertexOut) -> @location(0) vec4<f32> {
-  return v_in.color;
+    return v_in.color;
 }

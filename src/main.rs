@@ -22,11 +22,14 @@ fn main() -> Result<(), Error> {
 
     print!(
         r#"
-Select shader:
+Compute shaders:
     (1) saxpy
     (2) vec dot product
     (3) transpose
     (4) matrix dot product
+Render shaders: 
+    (5) triangle
+    (6) rectangle
 "#
     );
 
