@@ -5,15 +5,15 @@ struct VertexOut {
 }
 
 var<private>positions: array<vec4<f32>, 3> = array(
-  vec4<f32>(0.0, 0.5, 0.0, 1.0),
-  vec4<f32>(-0.5, -0.5, 0.0, 1.0),
-  vec4<f32>(0.5, -0.5, 0.0, 1.0)
+    vec4<f32>(0.0, 0.5, 0.0, 1.0),
+    vec4<f32>(-0.5, -0.5, 0.0, 1.0),
+    vec4<f32>(0.5, -0.5, 0.0, 1.0)
 );
 
 var<private>colors: array<vec4<f32>,3> = array(
-  vec4<f32>(1.0, 0.0, 0.0, 1.0),
-  vec4<f32>(0.0, 1.0, 0.0, 1.0),
-  vec4<f32>(0.0, 0.0, 1.0, 1.0)
+    vec4<f32>(1.0, 0.0, 0.0, 1.0),
+    vec4<f32>(0.0, 1.0, 0.0, 1.0),
+    vec4<f32>(0.0, 0.0, 1.0, 1.0)
 );
 
 
@@ -21,7 +21,7 @@ var<private>colors: array<vec4<f32>,3> = array(
 fn vertex_main(@builtin(vertex_index) in_vertex_index: u32) -> VertexOut {
 
     var out: VertexOut;
-    
+
     out.color = colors[in_vertex_index];
     out.position = positions[in_vertex_index];
 
